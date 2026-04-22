@@ -33,8 +33,8 @@
       <main class="main">
         <header class="topbar">
           <div>
-            <h1>Stable, shared-runtime Hermes</h1>
-            <p>WebUI at <code>/</code>, control plane at <code>/admin</code>, one canonical Hermes home.</p>
+            <h1>Hermes Control Plane</h1>
+            <p>WebUI at <code>/</code> · Admin at <code>/admin</code> · One shared Hermes identity</p>
           </div>
           <div class="topbar-actions">
             <button class="secondary-button" id="refresh-status" type="button">Refresh</button>
@@ -42,22 +42,23 @@
           </div>
         </header>
 
+        <!-- OVERVIEW -->
         <section class="panel active" id="panel-overview">
           <div class="grid cards-grid">
             <article class="card metric-card">
               <span class="eyebrow">Public surface</span>
               <h2>WebUI</h2>
-              <p id="webui-status-line">Loading…</p>
+              <p id="webui-status-line" class="muted">Loading…</p>
             </article>
             <article class="card metric-card">
               <span class="eyebrow">Gateway</span>
               <h2>Messaging runtime</h2>
-              <p id="gateway-status-line">Loading…</p>
+              <p id="gateway-status-line" class="muted">Loading…</p>
             </article>
             <article class="card metric-card">
               <span class="eyebrow">Agent identity</span>
               <h2>Shared state</h2>
-              <p id="paths-line">Loading…</p>
+              <p id="paths-line" class="muted">Loading…</p>
             </article>
           </div>
 
@@ -70,7 +71,7 @@
                 </div>
                 <div class="badge" id="gateway-badge">Unknown</div>
               </div>
-              <p class="muted">Autostart stays honest: Hermes only boots the gateway automatically when both a provider and at least one channel are configured.</p>
+              <p class="muted">Gateway autostarts only when both a provider and at least one channel credential are configured.</p>
               <div class="button-row">
                 <button class="secondary-button" data-gateway-action="start" type="button">Start</button>
                 <button class="secondary-button" data-gateway-action="stop" type="button">Stop</button>
@@ -79,19 +80,39 @@
             </article>
 
             <article class="card">
-              <span class="eyebrow">Onboarding stance</span>
-              <h3>Provider policy</h3>
-              <p class="muted">API-key providers are the happy path. Advanced OAuth-style providers remain manual unless a hosted flow is proven robust.</p>
-              <div class="note" id="provider-note">{{ unsupported_provider_note }}</div>
+              <span class="eyebrow">Current provider</span>
+              <h3 id="overview-provider-label">Not configured</h3>
+              <p class="muted" id="overview-provider-detail">Go to Providers to set an API key and model.</p>
+              <div class="button-row">
+                <button class="secondary-button" data-panel-link="providers" type="button">Configure provider →</button>
+              </div>
             </article>
           </div>
+
+          <article class="card">
+            <div class="card-header">
+              <div>
+                <span class="eyebrow">Active channels</span>
+                <h3>Messaging connections</h3>
+              </div>
+              <button class="secondary-button small-button" data-panel-link="channels" type="button">Edit channels →</button>
+            </div>
+            <div id="channel-chips" class="chip-row">Loading…</div>
+          </article>
         </section>
 
+        <!-- PROVIDERS -->
         <section class="panel" id="panel-providers">
           <article class="card narrow-card">
             <span class="eyebrow">Providers</span>
-            <h3>API-key-first onboarding</h3>
-            <p class="muted">Set a primary provider and model here. For Codex / ChatGPT-style login, use the advanced manual route outside the browser.</p>
+            <h3>API key setup</h3>
+            <p class="muted">Choose a provider and enter your API key. The model field pre-fills with a sensible default — change it if needed.</p>
+
+            <div class="current-state" id="provider-current-state" style="display:none">
+              <span class="current-label">Currently configured</span>
+              <span class="current-value" id="provider-current-badge"></span>
+            </div>
+
             <form id="provider-form" class="form-grid">
               <label>
                 <span>Provider</span>
@@ -103,73 +124,144 @@
               </label>
               <label>
                 <span>Model</span>
-                <input type="text" name="model" placeholder="anthropic/claude-sonnet-4.6">
+                <input type="text" name="model" id="provider-model" placeholder="claude-sonnet-4-6">
               </label>
-              <label>
+              <label class="full-width">
                 <span>API key</span>
-                <input type="password" name="api_key" placeholder="sk-…">
+                <input type="password" name="api_key" placeholder="Enter API key — existing key is not shown for security">
               </label>
-              <label>
-                <span>Base URL (custom only)</span>
+              <label class="full-width" id="base-url-field" style="display:none">
+                <span>Base URL</span>
                 <input type="text" name="base_url" placeholder="https://your-endpoint/v1">
               </label>
-              <div class="form-actions">
-                <button class="primary-button" type="submit">Save provider setup</button>
-              </div>
-            </form>
-            <pre class="inline-status" id="provider-form-status"></pre>
-          </article>
-        </section>
-
-        <section class="panel" id="panel-channels">
-          <article class="card">
-            <span class="eyebrow">Channels</span>
-            <h3>Messaging credentials</h3>
-            <p class="muted">Keep Telegram and WebUI as the same Hermes identity by writing channel credentials into the shared Hermes environment.</p>
-            <form id="channel-form" class="form-grid two-columns">
-              <label>
-                <span>Telegram bot token</span>
-                <input type="password" name="TELEGRAM_BOT_TOKEN" placeholder="123456:ABC…">
-              </label>
-              <label>
-                <span>Telegram allowed users</span>
-                <input type="text" name="TELEGRAM_ALLOWED_USERS" placeholder="user1,user2">
-              </label>
-              <label>
-                <span>Discord bot token</span>
-                <input type="password" name="DISCORD_BOT_TOKEN" placeholder="Discord token">
-              </label>
-              <label>
-                <span>Slack bot token</span>
-                <input type="password" name="SLACK_BOT_TOKEN" placeholder="xoxb-…">
-              </label>
-              <label>
-                <span>Slack app token</span>
-                <input type="password" name="SLACK_APP_TOKEN" placeholder="xapp-…">
-              </label>
-              <label>
-                <span>Email address</span>
-                <input type="email" name="EMAIL_ADDRESS" placeholder="agent@example.com">
-              </label>
               <div class="form-actions full-width">
-                <button class="primary-button" type="submit">Save channel settings</button>
+                <button class="primary-button" type="submit" id="provider-save-btn">Save provider</button>
               </div>
             </form>
-            <pre class="inline-status" id="channel-form-status"></pre>
+            <div class="inline-status" id="provider-form-status" style="display:none"></div>
+
+            <div class="note">
+              <strong>Advanced providers</strong> — OAuth-style flows (OpenAI Codex, ChatGPT subscription, Nous Portal) are not supported in the browser on Railway. Use terminal-first Hermes auth instead.
+            </div>
           </article>
         </section>
 
+        <!-- CHANNELS -->
+        <section class="panel" id="panel-channels">
+          <div class="grid two-up">
+
+            <article class="card">
+              <span class="eyebrow">Telegram</span>
+              <h3>Bot connection</h3>
+              <p class="muted">Your Hermes agent's Telegram identity. The bot token connects the gateway; allowed user IDs control who can chat.</p>
+              <form id="telegram-form" class="form-grid" data-channel="telegram">
+                <label>
+                  <span>Bot token</span>
+                  <input type="password" name="TELEGRAM_BOT_TOKEN" id="input-TELEGRAM_BOT_TOKEN"
+                    placeholder="123456:ABCdef… — leave blank to keep current">
+                  <small class="field-hint" id="hint-TELEGRAM_BOT_TOKEN"></small>
+                </label>
+                <label>
+                  <span>Allowed user IDs</span>
+                  <input type="text" name="TELEGRAM_ALLOWED_USERS" id="input-TELEGRAM_ALLOWED_USERS"
+                    placeholder="e.g. 123456789,987654321">
+                  <small class="field-hint">
+                    Comma-separated numeric Telegram user IDs. Only these users can chat with your bot.
+                    Don't know your ID? Message <strong>@userinfobot</strong> on Telegram.
+                  </small>
+                </label>
+                <div class="form-actions">
+                  <button class="primary-button" type="submit">Save Telegram</button>
+                </div>
+              </form>
+              <div class="inline-status" id="telegram-form-status" style="display:none"></div>
+            </article>
+
+            <article class="card">
+              <span class="eyebrow">Discord</span>
+              <h3>Bot connection</h3>
+              <p class="muted">Connect your Hermes agent to a Discord server.</p>
+              <form id="discord-form" class="form-grid" data-channel="discord">
+                <label>
+                  <span>Bot token</span>
+                  <input type="password" name="DISCORD_BOT_TOKEN" id="input-DISCORD_BOT_TOKEN"
+                    placeholder="Leave blank to keep current">
+                  <small class="field-hint" id="hint-DISCORD_BOT_TOKEN"></small>
+                </label>
+                <label>
+                  <span>Allowed user IDs</span>
+                  <input type="text" name="DISCORD_ALLOWED_USERS" id="input-DISCORD_ALLOWED_USERS"
+                    placeholder="Optional — comma-separated Discord user IDs">
+                  <small class="field-hint" id="hint-DISCORD_ALLOWED_USERS"></small>
+                </label>
+                <div class="form-actions">
+                  <button class="primary-button" type="submit">Save Discord</button>
+                </div>
+              </form>
+              <div class="inline-status" id="discord-form-status" style="display:none"></div>
+            </article>
+
+            <article class="card">
+              <span class="eyebrow">Slack</span>
+              <h3>Workspace connection</h3>
+              <form id="slack-form" class="form-grid" data-channel="slack">
+                <label>
+                  <span>Bot token</span>
+                  <input type="password" name="SLACK_BOT_TOKEN" id="input-SLACK_BOT_TOKEN"
+                    placeholder="xoxb-… — leave blank to keep current">
+                  <small class="field-hint" id="hint-SLACK_BOT_TOKEN"></small>
+                </label>
+                <label>
+                  <span>App token</span>
+                  <input type="password" name="SLACK_APP_TOKEN" id="input-SLACK_APP_TOKEN"
+                    placeholder="xapp-… — leave blank to keep current">
+                  <small class="field-hint" id="hint-SLACK_APP_TOKEN"></small>
+                </label>
+                <div class="form-actions">
+                  <button class="primary-button" type="submit">Save Slack</button>
+                </div>
+              </form>
+              <div class="inline-status" id="slack-form-status" style="display:none"></div>
+            </article>
+
+            <article class="card">
+              <span class="eyebrow">Email</span>
+              <h3>Mailbox connection</h3>
+              <form id="email-form" class="form-grid" data-channel="email">
+                <label>
+                  <span>Email address</span>
+                  <input type="email" name="EMAIL_ADDRESS" id="input-EMAIL_ADDRESS"
+                    placeholder="agent@example.com">
+                  <small class="field-hint" id="hint-EMAIL_ADDRESS"></small>
+                </label>
+                <label>
+                  <span>App password</span>
+                  <input type="password" name="EMAIL_PASSWORD" id="input-EMAIL_PASSWORD"
+                    placeholder="Leave blank to keep current">
+                  <small class="field-hint" id="hint-EMAIL_PASSWORD"></small>
+                </label>
+                <div class="form-actions">
+                  <button class="primary-button" type="submit">Save Email</button>
+                </div>
+              </form>
+              <div class="inline-status" id="email-form-status" style="display:none"></div>
+            </article>
+
+          </div>
+        </section>
+
+        <!-- LOGS -->
         <section class="panel" id="panel-logs">
           <div class="grid two-up">
             <article class="card">
               <span class="eyebrow">Gateway</span>
-              <h3>Recent runtime output</h3>
-              <pre class="log-box" id="gateway-log-box"></pre>
+              <h3>Recent output</h3>
+              <pre class="log-box" id="gateway-log-box">No gateway logs yet.</pre>
             </article>
             <article class="card">
               <span class="eyebrow">WebUI</span>
-              <h3>Recent internal process output</h3>
-              <pre class="log-box" id="webui-log-box"></pre>
+              <h3>Internal process output</h3>
+              <pre class="log-box" id="webui-log-box">No WebUI logs yet.</pre>
             </article>
           </div>
         </section>

@@ -33,6 +33,7 @@ from control_plane.config import (
     WEBUI_STATE_DIR,
     WORKSPACE_DIR,
     apply_provider_setup,
+    channel_form_values,
     channel_summary,
     ensure_runtime_dirs,
     extract_model_config,
@@ -205,7 +206,7 @@ async def api_gateway_action(request: Request) -> Response:
     else:
         return JSONResponse({"error": "unknown action"}, status_code=400)
     _invalidate_status_cache()
-    return JSONResponse({"ok": True, "status": gateway_manager.status()})
+    return JSONResponse({"ok": True, "status": _current_status()})
 
 
 async def api_provider_setup(request: Request) -> Response:
@@ -225,6 +226,14 @@ async def api_provider_setup(request: Request) -> Response:
     if gateway_manager.should_autostart() and not gateway_manager.is_running():
         gateway_manager.start()
     return JSONResponse({"ok": True, "result": result, "status": _current_status()})
+
+
+async def api_channel_values(request: Request) -> Response:
+    unauthorized = _admin_required(request)
+    if unauthorized:
+        return unauthorized
+    env_values = load_env_file(HERMES_ENV_PATH)
+    return JSONResponse({"ok": True, "values": channel_form_values(env_values)})
 
 
 async def api_channel_save(request: Request) -> Response:
@@ -268,6 +277,7 @@ routes = [
     Route("/admin/api/status", api_status),
     Route("/admin/api/gateway/{action}", api_gateway_action, methods=["POST"]),
     Route("/admin/api/provider/setup", api_provider_setup, methods=["POST"]),
+    Route("/admin/api/channels", api_channel_values, methods=["GET"]),
     Route("/admin/api/channels/save", api_channel_save, methods=["POST"]),
     Route("/admin/api/webui/{action}", api_webui_action, methods=["POST"]),
     Mount("/admin/static", app=StaticFiles(directory=str(BASE_DIR / "static")), name="admin-static"),

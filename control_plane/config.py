@@ -269,6 +269,24 @@ def masked_env_snapshot(env_values: dict[str, str]) -> dict[str, str]:
     return masked
 
 
+_PLAINTEXT_CHANNEL_KEYS = {"TELEGRAM_ALLOWED_USERS", "DISCORD_ALLOWED_USERS"}
+
+
+def channel_form_values(env_values: dict[str, str]) -> dict[str, str]:
+    """Return channel env values safe to pre-populate form fields.
+    Tokens/passwords are masked; user ID lists are returned plaintext."""
+    result: dict[str, str] = {}
+    for key in CHANNEL_ENV_KEYS:
+        value = env_values.get(key, "")
+        if not value:
+            result[key] = ""
+        elif key in _PLAINTEXT_CHANNEL_KEYS:
+            result[key] = value
+        else:
+            result[key] = mask_secret(value)
+    return result
+
+
 def channel_summary(env_values: dict[str, str]) -> list[dict[str, Any]]:
     summary = []
     for slug, meta in CHANNEL_FIELDS.items():

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import socket
 import subprocess
 import threading
 import time
@@ -75,19 +74,14 @@ class GatewayManager:
     def should_autostart(self) -> bool:
         return should_autostart_gateway(config_path=HERMES_CONFIG_PATH, env_path=HERMES_ENV_PATH)
 
-    def _probe_default_port(self, port: int = 8642) -> bool:
-        try:
-            with urlopen(f"http://127.0.0.1:{port}/health", timeout=2) as response:
-                return 200 <= response.status < 300
-        except URLError:
-            return False
-        except Exception:
-            return False
-
     def health_ok(self) -> bool:
-        if self._probe_default_port(8642):
-            return True
-        return False
+        """Gateway is healthy once its process has been alive for ≥3 s without exiting.
+        hermes gateway is a messaging bot — it does not expose an HTTP health endpoint."""
+        if not self.is_running():
+            return False
+        if self.start_time is None:
+            return False
+        return (time.time() - self.start_time) >= 3.0
 
     def status(self) -> dict:
         pid = self.process.pid if self.process else None
