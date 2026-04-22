@@ -1,5 +1,10 @@
-.ralph/logs/
+# BMAD / planning artifacts (internal only)
+_bmad/
 _bmad-output/
+.ralph/
+docs/plans/
+docs/decisions/
+CLAUDE.md
 
 # local runtime state
 .env
