@@ -35,6 +35,7 @@ class WebUIManager:
             return
         for line in iter(stream.readline, ""):
             self.logs.append(line.rstrip())
+            print(f"[webui-subprocess] {line.rstrip()}", flush=True)
         try:
             stream.close()
         except OSError:
