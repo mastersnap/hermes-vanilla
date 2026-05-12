@@ -46,7 +46,7 @@ fi
 OVERLAY_APPLY="/data/.hermes/webui-overlay/apply.sh"
 if [ -x "${OVERLAY_APPLY}" ]; then
   echo "[start] applying WebUI overlay from ${OVERLAY_APPLY}"
-  HERMES_BOOT_PHASE=INITIAL bash "${OVERLAY_APPLY}" || echo "[start] WARN: overlay apply failed (continuing)"
+  HERMES_BOOT_PHASE=initial bash "${OVERLAY_APPLY}" || echo "[start] WARN: overlay apply failed (continuing)"
 else
   echo "[start] no WebUI overlay found at ${OVERLAY_APPLY} (skipping)"
 fi
