@@ -38,6 +38,19 @@ if [ -d "/app/vendor/hermes-agent/optional-skills" ]; then
   cp -rn /app/vendor/hermes-agent/optional-skills/. "${HERMES_HOME}/optional-skills/" 2>/dev/null || true
 fi
 
+# Auto-apply WebUI overlay on every container start.
+# /app/vendor/hermes-webui/ is rebuilt from the image on each deploy, which
+# wipes custom UI. Overlay source lives on /data (persistent volume), so
+# re-apply it on each boot. apply.sh also restarts the WebUI process so new
+# routes.py takes effect immediately.
+OVERLAY_APPLY="/data/.hermes/webui-overlay/apply.sh"
+if [ -x "${OVERLAY_APPLY}" ]; then
+  echo "[start] applying WebUI overlay from ${OVERLAY_APPLY}"
+  bash "${OVERLAY_APPLY}" || echo "[start] WARN: overlay apply failed (continuing)"
+else
+  echo "[start] no WebUI overlay found at ${OVERLAY_APPLY} (skipping)"
+fi
+
 echo "[start] launching Hermes control plane on 0.0.0.0:${PORT:-8787}"
 echo "[start] internal WebUI target ${CONTROL_PLANE_INTERNAL_WEBUI_HOST}:${CONTROL_PLANE_INTERNAL_WEBUI_PORT}"
 echo "[start] gateway autostart mode ${HERMES_GATEWAY_AUTOSTART}"
