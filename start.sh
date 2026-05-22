@@ -30,6 +30,22 @@ for f in telegram-approved.json telegram-pending.json _rate_limits.json; do
 done
 chmod 600 "${HERMES_HOME}"/pairing/*.json 2>/dev/null || true
 
+# Seed API keys from Railway env vars into ${HERMES_HOME}/.env so the WebUI
+# first-run wizard and provider config can find them. Idempotent: each key is
+# removed-then-rewritten so updating env vars on Railway propagates on redeploy.
+ENVFILE="${HERMES_HOME}/.env"
+touch "${ENVFILE}"
+chmod 600 "${ENVFILE}"
+for K in ANTHROPIC_API_KEY OPENAI_API_KEY DEEPSEEK_API_KEY OPENROUTER_API_KEY; do
+  V="$(printenv "$K" || true)"
+  if [ -n "${V}" ]; then
+    grep -v "^${K}=" "${ENVFILE}" > "${ENVFILE}.tmp" || true
+    echo "${K}=${V}" >> "${ENVFILE}.tmp"
+    mv "${ENVFILE}.tmp" "${ENVFILE}"
+  fi
+done
+echo "[start] seeded ${ENVFILE} with $(grep -c API_KEY "${ENVFILE}" || echo 0) provider key(s)"
+
 # Seed vendored built-in skills on first run (no-clobber preserves user edits)
 if [ -d "/app/vendor/hermes-agent/skills" ]; then
   cp -rn /app/vendor/hermes-agent/skills/. "${HERMES_HOME}/skills/" 2>/dev/null || true
